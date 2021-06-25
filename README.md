@@ -1,2 +1,2 @@
 # AIS
-Aquatic Invasive Species establishment prediction toolset
+Aquatic Invasive Species (AIS) establishment prediction toolset
