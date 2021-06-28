@@ -3,8 +3,9 @@ Aquatic Invasive Species (AIS) establishment prediction toolset
 
 
 ## Pathname convention:
+<pre>
 AIS/
-  |-_ notebook.ipynb
+  |- notebook.ipynb
   |- datasets/
     |- points/
       |- # Presence and absence data points
@@ -14,6 +15,7 @@ AIS/
       |- # Location for script output files, used fo traiing ML alg
     |- decade/
       |- # Data grouped by decade. We're still figuring out what this is 
+</pre>
 
 
 
@@ -25,12 +27,4 @@ AIS/
   You can find the paths in the "Define Modular Variables" block.
 
   We also currently store GEE hosted files at 'users/kjchristensen93/'
-
-
-
-
-  
-
-
-
 
