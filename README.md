@@ -12,7 +12,7 @@ AIS/
     |- hucs/
       |- # .geojson files, by state
     |- training/
-      |- # Location for script output files, used fo traiing ML alg
+      |- # Location for script output files, used for training ML alg
     |- decade/
       |- # Data grouped by decade. We're still figuring out what this is 
 </pre>
