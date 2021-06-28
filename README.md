@@ -28,3 +28,7 @@ AIS/
 
   We also currently store GEE hosted files at 'users/kjchristensen93/'
 
+
+
+### Note on src/gee_funs.py
+  In the current state, gee_funs will not work because we have not refactored the code to account for global variable usage. Stay tuned
