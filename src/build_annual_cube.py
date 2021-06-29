@@ -111,30 +111,17 @@ def build_annual_cube(d):
   #========================================================
   #Define function to compute seasonal information for a given variable
   #========================================================
-    def add_seasonal_info(imgCol,name,bandName):
-        winter = imgCol.filterDate(winter_start,winter_end)
-        spring = imgCol.filterDate(spring_start,spring_end)
-        summer = imgCol.filterDate(summer_start,summer_end)
-        fall = imgCol.filterDate(fall_start,fall_end)
+    def add_seasonal_info(imgCol,name):
 
-        winter_tot = winter.sum()
-        spring_tot = spring.sum()
-        summer_tot = summer.sum()
-        fall_tot = fall.sum()
+        # Set up Seasonal dates for precip, seasonal predictors
+        spring_start = ee.Date(self.startDate).advance(3,'month')
+        summer_start = ee.Date(self.startDate).advance(6,'month')
+        fall_start = ee.Date(self.startDate).advance(9,'month')
 
-        winter_max = winter.max()
-        winter_min = winter.min()
-        spring_max = spring.max()
-        spring_min = spring.min()
-        summer_max = summer.max()
-        summer_min = summer.min()
-        fall_max = fall.max()
-        fall_min = fall.min()
-
-        winter_diff = winter_max.subtract(winter_min)
-        spring_diff = spring_max.subtract(spring_min)
-        summer_diff = summer_max.subtract(summer_min)
-        fall_diff = fall_max.subtract(fall_min)
+        winter_tot = imgCol.filterDate(self.startDate,spring_start).sum()
+        spring_tot = imgCol.filterDate(spring_start,summer_start).sum()
+        summer_tot = imgCol.filterDate(summer_start,fall_start).sum()
+        fall_tot = imgCol.filterDate(fall_start,endDate).sum()
 
         names = ['winter_total'+name,'spring_total'+name,'summer_total'+name,
                       'fall_total'+name]
@@ -142,20 +129,10 @@ def build_annual_cube(d):
         return winter_tot.addBands([spring_tot,summer_tot,fall_tot]) \
                          .rename(names)
 
-  # Set up Seasonal dates for precip, seasonal predictors
-    winter_start = ee.Date(startDate)
-    winter_end = ee.Date(startDate).advance(3,'month')
-    spring_start = ee.Date(startDate).advance(3,'month')
-    spring_end = ee.Date(startDate).advance(6,'month')
-    summer_start = ee.Date(startDate).advance(6,'month')
-    summer_end = ee.Date(startDate).advance(9,'month')
-    fall_start = ee.Date(startDate).advance(9,'month')
-    fall_end = ee.Date(endDate)
-
   # Aggregate seasonal info for each variable of interest (potEvap neglected purposefully)
-    seasonal_precip = add_seasonal_info(NLDAS_precip,"Precip","total_precipitation")
-    seasonal_temp = add_seasonal_info(NLDAS_temp,"Temp","temperature")
-    seasonal_humid = add_seasonal_info(NLDAS_humid,"Humidity","specific_humidity")
+    seasonal_precip = add_seasonal_info(NLDAS_precip,"Precip")
+    seasonal_temp = add_seasonal_info(NLDAS_temp,"Temp")
+    seasonal_humid = add_seasonal_info(NLDAS_humid,"Humidity")
 
     waterYear_start = ee.Date(startDate).advance(10,'month')
     waterYear_end = waterYear_start.advance(1,'year')
