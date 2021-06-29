@@ -50,17 +50,17 @@ pekel_static_water = ee.ImageCollection('JRC/GSW1_2/MonthlyRecurrence')
 #========================================================
 
 
-NLDAS_precip = NLDAS.select("total_precipitation");
-NLDAS_temp = NLDAS.select("temperature");
-NLDAS_humid = NLDAS.select("specific_humidity");
-NLDAS_potEvap = NLDAS.select("potential_evaporation");
+NLDAS_precip = NLDAS.select("total_precipitation")
+NLDAS_temp = NLDAS.select("temperature")
+NLDAS_humid = NLDAS.select("specific_humidity")
+NLDAS_potEvap = NLDAS.select("potential_evaporation")
 
 
 CHILI = CHILI.rename(['Heat_Insolation_Load'])
-srtmChili = CHILI.select('Heat_Insolation_Load');
+srtmChili = CHILI.select('Heat_Insolation_Load')
 topoDiversity = topoDiversity.rename(["Topographic_Diversity"])
 topoDiv = topoDiversity.select("Topographic_Diversity")
-footprint = ee.Image(gHM.first().select("gHM"));
+footprint = ee.Image(gHM.first().select("gHM"))
 
 # Surface water occurrence
 sw_occurrence = pekel_static_water\
@@ -70,11 +70,11 @@ sw_occurrence = pekel_static_water\
                       .unmask()
 
 ## Mask features by quality control bands
-GPP_QC = GPP.map(gpp_qc);
+GPP_QC = GPP.map(gpp_qc)
 
 
 LST = modusGlobal.map(lst_qc) \
-                 .select("LST_Day_1km");
+                 .select("LST_Day_1km")
 
 modusVeg_QC = modusVeg.map(modusQC)
 EVI = modusVeg_QC.select("EVI")
@@ -90,11 +90,11 @@ distFilter = ee.Filter.intersects(**{
   'leftField': '.geo', 
   'rightField': '.geo', 
   'maxError': 100
-});
+})
 
 pointJoin = ee.Join.saveAll(**{
   'matchesKey': 'Points',
-});
+})
 
 
 ## Annual Cube function
