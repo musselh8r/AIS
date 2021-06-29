@@ -115,14 +115,14 @@ def build_annual_cube(d):
     def add_seasonal_info(imgCol,name):
 
         # Set up Seasonal dates for precip, seasonal predictors
-        spring_start = ee.Date(self.startDate).advance(3,'month')
-        summer_start = ee.Date(self.startDate).advance(6,'month')
-        fall_start = ee.Date(self.startDate).advance(9,'month')
+        spring_start = ee.Date(startDate).advance(3,'month')
+        summer_start = ee.Date(startDate).advance(6,'month')
+        fall_start = ee.Date(startDate).advance(9,'month')
         
         # pixelwise sum of imageCollection for each season, resulting in a
         # image with total value at each pixel, e.g. total precip over the 
         # season at each pixel
-        winter_tot = imgCol.filterDate(self.startDate,spring_start).sum()
+        winter_tot = imgCol.filterDate(startDate,spring_start).sum()
         spring_tot = imgCol.filterDate(spring_start,summer_start).sum()
         summer_tot = imgCol.filterDate(summer_start,fall_start).sum()
         fall_tot = imgCol.filterDate(fall_start,endDate).sum()
