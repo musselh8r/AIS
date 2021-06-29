@@ -1,4 +1,5 @@
 import ee
+from gee_funs import *
 
 #Build Big Raster Image
 ## Import assets
@@ -117,7 +118,10 @@ def build_annual_cube(d):
         spring_start = ee.Date(self.startDate).advance(3,'month')
         summer_start = ee.Date(self.startDate).advance(6,'month')
         fall_start = ee.Date(self.startDate).advance(9,'month')
-
+        
+        # pixelwise sum of imageCollection for each season, resulting in a
+        # image with total value at each pixel, e.g. total precip over the 
+        # season at each pixel
         winter_tot = imgCol.filterDate(self.startDate,spring_start).sum()
         spring_tot = imgCol.filterDate(spring_start,summer_start).sum()
         summer_tot = imgCol.filterDate(summer_start,fall_start).sum()
@@ -177,21 +181,19 @@ def build_annual_cube(d):
                       .mean() \
                       .rename(['Mean_GPP','QC'])
 
-  # All banded images that don't change over time
-    static_input_bands = sw_occurrence.addBands(DEM.select("elevation")) \
-                                          .addBands(srtmChili) \
-                                          .addBands(topoDiv) \
-                                          .addBands(footprint)
-
   # Construct huge banded image
-    banded_image = static_input_bands \
-                          .addBands(srcImg = maxLST, names = ["Max_LST_Annual"]) \
-                          .addBands(srcImg = maxGPP, names = ["Mean_GPP"]) \
-                          .addBands(srcImg =  maxNDVI, names = ["Mean_NDVI"]) \
-                          .addBands(srcImg = maxEVI, names = ["Mean_EVI"]) \
-                          .addBands(meanVCF.select("Percent_Tree_Cover")) \
-                          .addBands(seasonal_precip) \
-                          .addBands(flashiness_yearly) \
-                          .set("system:time_start",startDate)
+    banded_image = sw_occurrence \
+        .addBands(DEM.select("elevation")) \
+        .addBands(srtmChili) \
+        .addBands(topoDiv) \
+        .addBands(footprint) \
+        .addBands(srcImg = maxLST, names = ["Max_LST_Annual"]) \
+        .addBands(srcImg = maxGPP, names = ["Mean_GPP"]) \
+        .addBands(srcImg =  maxNDVI, names = ["Mean_NDVI"]) \
+        .addBands(srcImg = maxEVI, names = ["Mean_EVI"]) \
+        .addBands(meanVCF.select("Percent_Tree_Cover")) \
+        .addBands(seasonal_precip) \
+        .addBands(flashiness_yearly) \
+        .set("system:time_start",startDate)
 
     return banded_image.unmask()
