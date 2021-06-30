@@ -145,7 +145,7 @@ def build_all_cubes(start_year, end_year):
         # Filter Precip by water year to get total precip annually
 
         # waterYearTot = NLDAS_precip.filterDate(waterYear_start,waterYear_end) \
-                                    .sum()
+                                    #.sum()
 
         # Find mean EVI per year:
         maxEVI = EVI.filterDate(startDate,endDate) \
