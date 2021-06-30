@@ -4,17 +4,17 @@ import numpy as np
 import geopandas as gpd
 
 #### ML Variables ####
-HUC_state = ('../datasets/hucs/MT_HUCS.geojson')
+HUC_state = ('./datasets/hucs/MT_HUCS.geojson')
 
 #Training Glob
-trainingglob = ('/home/kevin/FLBS/AIS/datasets/training/*.csv')
+trainingglob = ('./datasets/training/*.csv')
 # trainingglob = ((trainingdata)/*.csv) will this work?
 #decadal CSV directory and naming conventions
-decade1 = ('../datasets/decade/decade1_filename.csv')
-decade2 =('../datasets/decade/decade2_filename.csv')
+decade1 = ('./datasets/decade/decade1_filename.csv')
+decade2 =('./datasets/decade/decade2_filename.csv')
 #decadal predictions
-decade1_pred = ('../datasets/decade/decade1_pred_filename.csv')
-decade2_pred = ('../datasets/decade/decade2_pred_filename.csv')
+decade1_pred = ('./datasets/decade/decade1_pred_filename.csv')
+decade2_pred = ('./datasets/decade/decade2_pred_filename.csv')
 
 #######################
 
