@@ -36,10 +36,10 @@ def build_all_cubes(start_year, end_year):
     NLDAS = ee.ImageCollection("NASA/NLDAS/FORA0125_H002")
 
     # Shape file containing Country Boundaries
-    countries = ee.FeatureCollection("USDOS/LSIB_SIMPLE/2017")
+    # countries = ee.FeatureCollection("USDOS/LSIB_SIMPLE/2017")
 
     # Shape file containing HUC polygons
-    HUC = ee.FeatureCollection("USGS/WBD/2017/HUC12")
+    # HUC = ee.FeatureCollection("USGS/WBD/2017/HUC12")
 
     # Dynamic Surface Water metric
     pekel_monthly_water = ee.ImageCollection("JRC/GSW1_2/MonthlyHistory")
@@ -53,9 +53,9 @@ def build_all_cubes(start_year, end_year):
     #========================================================
 
     NLDAS_precip = NLDAS.select("total_precipitation")
-    NLDAS_temp = NLDAS.select("temperature")
-    NLDAS_humid = NLDAS.select("specific_humidity")
-    NLDAS_potEvap = NLDAS.select("potential_evaporation")
+    # NLDAS_temp = NLDAS.select("temperature")
+    # NLDAS_humid = NLDAS.select("specific_humidity")
+    # NLDAS_potEvap = NLDAS.select("potential_evaporation")
 
 
     CHILI = CHILI.rename(['Heat_Insolation_Load'])
@@ -125,11 +125,11 @@ def build_all_cubes(start_year, end_year):
 
         # Aggregate seasonal info for each variable of interest (potEvap neglected purposefully)
         seasonal_precip = add_seasonal_info(NLDAS_precip,"Precip")
-        seasonal_temp = add_seasonal_info(NLDAS_temp,"Temp")
-        seasonal_humid = add_seasonal_info(NLDAS_humid,"Humidity")
+        # seasonal_temp = add_seasonal_info(NLDAS_temp,"Temp")
+        # seasonal_humid = add_seasonal_info(NLDAS_humid,"Humidity")
 
-        waterYear_start = ee.Date(startDate).advance(10,'month')
-        waterYear_end = waterYear_start.advance(1,'year')
+        # waterYear_start = ee.Date(startDate).advance(10,'month')
+        # waterYear_end = waterYear_start.advance(1,'year')
 
         #========================================================
         # Aggregate Other Covariates
@@ -144,7 +144,7 @@ def build_all_cubes(start_year, end_year):
 
         # Filter Precip by water year to get total precip annually
 
-        waterYearTot = NLDAS_precip.filterDate(waterYear_start,waterYear_end) \
+        # waterYearTot = NLDAS_precip.filterDate(waterYear_start,waterYear_end) \
                                     .sum()
 
         # Find mean EVI per year:
