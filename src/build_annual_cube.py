@@ -1,199 +1,193 @@
 import ee
-from gee_funs import *
+import src.gee_funs as gf
 
-#Build Big Raster Image
-## Import assets
-# MODIS Mission
-modusGlobal = ee.ImageCollection("MODIS/006/MYD11A2")
+def build_all_cubes(start_year, end_year):
 
-# Primary Productivity
-GPP = ee.ImageCollection("UMT/NTSG/v2/LANDSAT/GPP")
+    #Build Big Raster Image
+    ## Import assets
+    # MODIS Mission
+    modusGlobal = ee.ImageCollection("MODIS/006/MYD11A2")
 
-# Surface water
-pikelSurfaceWater = ee.Image("JRC/GSW1_1/GlobalSurfaceWater")
+    # Primary Productivity
+    GPP = ee.ImageCollection("UMT/NTSG/v2/LANDSAT/GPP")
 
-# Elevation
-DEM = ee.Image("USGS/NED")
+    # Surface water
+    pikelSurfaceWater = ee.Image("JRC/GSW1_1/GlobalSurfaceWater")
 
-# Enhanced Vegetation Index and NDVI
-modusVeg = ee.ImageCollection("MODIS/006/MYD13A2")
+    # Elevation
+    DEM = ee.Image("USGS/NED")
 
-# Heat Isolation Load
-CHILI = ee.Image("CSP/ERGo/1_0/Global/SRTM_CHILI")
+    # Enhanced Vegetation Index and NDVI
+    modusVeg = ee.ImageCollection("MODIS/006/MYD13A2")
 
-# Topographic Diversity
-topoDiversity = ee.Image("CSP/ERGo/1_0/Global/ALOS_topoDiversity")
+    # Heat Isolation Load
+    CHILI = ee.Image("CSP/ERGo/1_0/Global/SRTM_CHILI")
 
-# Vegetation Continuous Field product - percent tree cover, etc
-VCF = ee.ImageCollection("MODIS/006/MOD44B")
+    # Topographic Diversity
+    topoDiversity = ee.Image("CSP/ERGo/1_0/Global/ALOS_topoDiversity")
 
-# Human Modification index
-gHM = ee.ImageCollection("CSP/HM/GlobalHumanModification")
+    # Vegetation Continuous Field product - percent tree cover, etc
+    VCF = ee.ImageCollection("MODIS/006/MOD44B")
 
-# Climate information
-NLDAS = ee.ImageCollection("NASA/NLDAS/FORA0125_H002")
+    # Human Modification index
+    gHM = ee.ImageCollection("CSP/HM/GlobalHumanModification")
 
-# Shape file containing Country Boundaries
-countries = ee.FeatureCollection("USDOS/LSIB_SIMPLE/2017")
+    # Climate information
+    NLDAS = ee.ImageCollection("NASA/NLDAS/FORA0125_H002")
 
-# Shape file containing HUC polygons
-HUC = ee.FeatureCollection("USGS/WBD/2017/HUC12")
+    # Shape file containing Country Boundaries
+    countries = ee.FeatureCollection("USDOS/LSIB_SIMPLE/2017")
 
-# Dynamic Surface Water metric
-pekel_monthly_water = ee.ImageCollection("JRC/GSW1_2/MonthlyHistory")
+    # Shape file containing HUC polygons
+    HUC = ee.FeatureCollection("USGS/WBD/2017/HUC12")
 
-# Static surface water metric
-pekel_static_water = ee.ImageCollection('JRC/GSW1_2/MonthlyRecurrence')
+    # Dynamic Surface Water metric
+    pekel_monthly_water = ee.ImageCollection("JRC/GSW1_2/MonthlyHistory")
 
-## Select features, etc
-#========================================================
-#Rename Bands and select bands, etc
-#========================================================
+    # Static surface water metric
+    pekel_static_water = ee.ImageCollection('JRC/GSW1_2/MonthlyRecurrence')
 
+    ## Select features, etc
+    #========================================================
+    #Rename Bands and select bands, etc
+    #========================================================
 
-NLDAS_precip = NLDAS.select("total_precipitation")
-NLDAS_temp = NLDAS.select("temperature")
-NLDAS_humid = NLDAS.select("specific_humidity")
-NLDAS_potEvap = NLDAS.select("potential_evaporation")
-
-
-CHILI = CHILI.rename(['Heat_Insolation_Load'])
-srtmChili = CHILI.select('Heat_Insolation_Load')
-topoDiversity = topoDiversity.rename(["Topographic_Diversity"])
-topoDiv = topoDiversity.select("Topographic_Diversity")
-footprint = ee.Image(gHM.first().select("gHM"))
-
-# Surface water occurrence
-sw_occurrence = pekel_static_water\
-                      .select('monthly_recurrence')\
-                      .mean()\
-                      .rename(['SurfaceWaterOccurrence'])\
-                      .unmask()
-
-## Mask features by quality control bands
-GPP_QC = GPP.map(gpp_qc)
+    NLDAS_precip = NLDAS.select("total_precipitation")
+    NLDAS_temp = NLDAS.select("temperature")
+    NLDAS_humid = NLDAS.select("specific_humidity")
+    NLDAS_potEvap = NLDAS.select("potential_evaporation")
 
 
-LST = modusGlobal.map(lst_qc) \
-                 .select("LST_Day_1km")
+    CHILI = CHILI.rename(['Heat_Insolation_Load'])
+    srtmChili = CHILI.select('Heat_Insolation_Load')
+    topoDiversity = topoDiversity.rename(["Topographic_Diversity"])
+    topoDiv = topoDiversity.select("Topographic_Diversity")
+    footprint = ee.Image(gHM.first().select("gHM"))
 
-modusVeg_QC = modusVeg.map(modusQC)
-EVI = modusVeg_QC.select("EVI")
-NDVI = modusVeg_QC.select("NDVI")
+    # Surface water occurrence
+    sw_occurrence = pekel_static_water\
+                        .select('monthly_recurrence')\
+                        .mean()\
+                        .rename(['SurfaceWaterOccurrence'])\
+                        .unmask()
 
-VCF_qc = VCF.map(VCFqc)
-
-
-#========================================================
-# Define Point Joins such that each HUC contains a list of observational data:
-#========================================================
-distFilter = ee.Filter.intersects(**{
-  'leftField': '.geo', 
-  'rightField': '.geo', 
-  'maxError': 100
-})
-
-pointJoin = ee.Join.saveAll(**{
-  'matchesKey': 'Points',
-})
+    ## Mask features by quality control bands
+    GPP_QC = GPP.map(gf.gpp_qc)
 
 
-## Annual Cube function
-#========================================================
-# "Builder Function" -- processes each annual variable into a list of images
-#========================================================
+    LST = modusGlobal.map(gf.lst_qc) \
+                    .select("LST_Day_1km")
 
-def build_annual_cube(d):
-    # Set start and end dates for filtering time dependent predictors (SR, NDVI, Phenology)
-      # Advance startDate by 1 to begin with to account for water year (below)
-    startDate = (ee.Date(d).advance(1.0,'year').millis()) ## FIXME: Why do we advance a year? this give 2003-2019 instead of 2002-2018
-    endDate = ee.Date(d).advance(2.0,'year').millis()
+    modusVeg_QC = modusVeg.map(gf.modusQC)
+    EVI = modusVeg_QC.select("EVI")
+    NDVI = modusVeg_QC.select("NDVI")
 
-  #========================================================
-  #Define function to compute seasonal information for a given variable
-  #========================================================
-    def add_seasonal_info(imgCol,name):
+    VCF_qc = VCF.map(gf.VCFqc)
 
-        # Set up Seasonal dates for precip, seasonal predictors
-        spring_start = ee.Date(startDate).advance(3,'month')
-        summer_start = ee.Date(startDate).advance(6,'month')
-        fall_start = ee.Date(startDate).advance(9,'month')
-        
-        # pixelwise sum of imageCollection for each season, resulting in a
-        # image with total value at each pixel, e.g. total precip over the 
-        # season at each pixel
-        winter_tot = imgCol.filterDate(startDate,spring_start).sum()
-        spring_tot = imgCol.filterDate(spring_start,summer_start).sum()
-        summer_tot = imgCol.filterDate(summer_start,fall_start).sum()
-        fall_tot = imgCol.filterDate(fall_start,endDate).sum()
+    ee_dates = ee.List(list(map( \
+        lambda x: ee.Date(str(x) + '-01-01'), \
+        range(start_year,end_year) )))
 
-        names = ['winter_total'+name,'spring_total'+name,'summer_total'+name,
-                      'fall_total'+name]
+    ## Annual Cube function
+    #========================================================
+    # "Builder Function" -- processes each annual variable into a list of images
+    #========================================================
 
-        return winter_tot.addBands([spring_tot,summer_tot,fall_tot]) \
-                         .rename(names)
+    def build_annual_cube(d):
+        # Set start and end dates for filtering time dependent predictors (SR, NDVI, Phenology)
+        # Advance startDate by 1 to begin with to account for water year (below)
+        startDate = (ee.Date(d).advance(1.0,'year').millis()) ## FIXME: Why do we advance a year? this give 2003-2019 instead of 2002-2018
+        endDate = ee.Date(d).advance(2.0,'year').millis()
 
-  # Aggregate seasonal info for each variable of interest (potEvap neglected purposefully)
-    seasonal_precip = add_seasonal_info(NLDAS_precip,"Precip")
-    seasonal_temp = add_seasonal_info(NLDAS_temp,"Temp")
-    seasonal_humid = add_seasonal_info(NLDAS_humid,"Humidity")
+        #========================================================
+        #Define function to compute seasonal information for a given variable
+        #========================================================
+        def add_seasonal_info(imgCol,name):
 
-    waterYear_start = ee.Date(startDate).advance(10,'month')
-    waterYear_end = waterYear_start.advance(1,'year')
+            # Set up Seasonal dates for precip, seasonal predictors
+            spring_start = ee.Date(startDate).advance(3,'month')
+            summer_start = ee.Date(startDate).advance(6,'month')
+            fall_start = ee.Date(startDate).advance(9,'month')
+            
+            # pixelwise sum of imageCollection for each season, resulting in a
+            # image with total value at each pixel, e.g. total precip over the 
+            # season at each pixel
+            winter_tot = imgCol.filterDate(startDate,spring_start).sum()
+            spring_tot = imgCol.filterDate(spring_start,summer_start).sum()
+            summer_tot = imgCol.filterDate(summer_start,fall_start).sum()
+            fall_tot = imgCol.filterDate(fall_start,endDate).sum()
 
-  #========================================================
-  # Aggregate Other Covariates
-  #========================================================
+            names = ['winter_total'+name,'spring_total'+name,'summer_total'+name,
+                          'fall_total'+name]
 
-  # Vegetative Continuous Fields
-    meanVCF = VCF.filterDate(startDate, endDate)\
-                 .mean()
-    
-#     VCF_qc.filterDate(startDate, endDate) \
-#                       .mean()
+            return winter_tot.addBands([spring_tot,summer_tot,fall_tot]) \
+                            .rename(names)
 
-  # Filter Precip by water year to get total precip annually
+        # Aggregate seasonal info for each variable of interest (potEvap neglected purposefully)
+        seasonal_precip = add_seasonal_info(NLDAS_precip,"Precip")
+        seasonal_temp = add_seasonal_info(NLDAS_temp,"Temp")
+        seasonal_humid = add_seasonal_info(NLDAS_humid,"Humidity")
 
-    waterYearTot = NLDAS_precip.filterDate(waterYear_start,waterYear_end) \
-                                 .sum()
+        waterYear_start = ee.Date(startDate).advance(10,'month')
+        waterYear_end = waterYear_start.advance(1,'year')
 
-  # Find mean EVI per year:
-    maxEVI = EVI.filterDate(startDate,endDate) \
-                  .mean() \
-                  .rename(['Mean_EVI'])
+        #========================================================
+        # Aggregate Other Covariates
+        #========================================================
 
-  #Find mean NDVI per year:
-    maxNDVI = NDVI.filterDate(startDate,endDate) \
-                    .mean() \
-                    .rename(["Mean_NDVI"])
+        # Vegetative Continuous Fields
+        meanVCF = VCF.filterDate(startDate, endDate)\
+                    .mean()
+          
+        #     VCF_qc.filterDate(startDate, endDate) \
+        #                       .mean()
 
-  # Find flashiness per year by taking a Per-pixel Standard Deviation:
-    flashiness_yearly = ee.Image(pekel_monthly_water.filterDate(startDate,endDate) \
-                                                      .reduce(ee.Reducer.sampleStdDev()) \
-                                                      .select(["water_stdDev"])) \
-                                                      .rename("Flashiness")
+        # Filter Precip by water year to get total precip annually
 
-  # Find max LST per year:
-    maxLST = LST.max().rename(["Max_LST_Annual"])
+        waterYearTot = NLDAS_precip.filterDate(waterYear_start,waterYear_end) \
+                                    .sum()
 
-  # Find mean GPP per year:
-    maxGPP = GPP_QC.filterDate(startDate,endDate) \
+        # Find mean EVI per year:
+        maxEVI = EVI.filterDate(startDate,endDate) \
                       .mean() \
-                      .rename(['Mean_GPP','QC'])
+                      .rename(['Mean_EVI'])
 
-  # Construct huge banded image
-    banded_image = sw_occurrence \
-        .addBands(DEM.select("elevation")) \
-        .addBands(srtmChili) \
-        .addBands(topoDiv) \
-        .addBands(footprint) \
-        .addBands(srcImg = maxLST, names = ["Max_LST_Annual"]) \
-        .addBands(srcImg = maxGPP, names = ["Mean_GPP"]) \
-        .addBands(srcImg =  maxNDVI, names = ["Mean_NDVI"]) \
-        .addBands(srcImg = maxEVI, names = ["Mean_EVI"]) \
-        .addBands(meanVCF.select("Percent_Tree_Cover")) \
-        .addBands(seasonal_precip) \
-        .addBands(flashiness_yearly) \
-        .set("system:time_start",startDate)
+        #Find mean NDVI per year:
+        maxNDVI = NDVI.filterDate(startDate,endDate) \
+                        .mean() \
+                        .rename(["Mean_NDVI"])
 
-    return banded_image.unmask()
+        # Find flashiness per year by taking a Per-pixel Standard Deviation:
+        flashiness_yearly = ee.Image(pekel_monthly_water.filterDate(startDate,endDate) \
+                                                          .reduce(ee.Reducer.sampleStdDev()) \
+                                                          .select(["water_stdDev"])) \
+                                                          .rename("Flashiness")
+
+        # Find max LST per year:
+        maxLST = LST.max().rename(["Max_LST_Annual"])
+
+        # Find mean GPP per year:
+        maxGPP = GPP_QC.filterDate(startDate,endDate) \
+                          .mean() \
+                          .rename(['Mean_GPP','QC'])
+
+        # Construct huge banded image
+        banded_image = sw_occurrence \
+            .addBands(DEM.select("elevation")) \
+            .addBands(srtmChili) \
+            .addBands(topoDiv) \
+            .addBands(footprint) \
+            .addBands(srcImg = maxLST, names = ["Max_LST_Annual"]) \
+            .addBands(srcImg = maxGPP, names = ["Mean_GPP"]) \
+            .addBands(srcImg =  maxNDVI, names = ["Mean_NDVI"]) \
+            .addBands(srcImg = maxEVI, names = ["Mean_EVI"]) \
+            .addBands(meanVCF.select("Percent_Tree_Cover")) \
+            .addBands(seasonal_precip) \
+            .addBands(flashiness_yearly) \
+            .set("system:time_start",startDate)
+
+        return banded_image.unmask()
+
+    return ee.List(ee_dates.map(build_annual_cube))
+
+
