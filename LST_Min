@@ -1,0 +1,128 @@
+#Replace code in your script with this block of script to add LST Min to covariate bands
+
+## Annual Cube function
+#========================================================
+# "Builder Function" -- processes each annual variable into a list of images
+#========================================================
+
+def build_annual_cube(d):
+    # Set start and end dates for filtering time dependent predictors (SR, NDVI, Phenology)
+      # Advance startDate by 1 to begin with to account for water year (below)
+    startDate = (ee.Date(d).advance(1.0,'year').millis())
+    endDate = ee.Date(d).advance(2.0,'year').millis()
+
+  #========================================================
+  #Define function to compute seasonal information for a given variable
+  #========================================================
+    def add_seasonal_info(imgCol,name,bandName):
+        winter = imgCol.filterDate(winter_start,winter_end)
+        spring = imgCol.filterDate(spring_start,spring_end)
+        summer = imgCol.filterDate(summer_start,summer_end)
+        fall = imgCol.filterDate(fall_start,fall_end)
+
+        winter_tot = winter.sum()
+        spring_tot = spring.sum()
+        summer_tot = summer.sum()
+        fall_tot = fall.sum()
+
+        winter_max = winter.max()
+        winter_min = winter.min()
+        spring_max = spring.max()
+        spring_min = spring.min()
+        summer_max = summer.max()
+        summer_min = summer.min()
+        fall_max = fall.max()
+        fall_min = fall.min()
+
+        winter_diff = winter_max.subtract(winter_min)
+        spring_diff = spring_max.subtract(spring_min)
+        summer_diff = summer_max.subtract(summer_min)
+        fall_diff = fall_max.subtract(fall_min)
+
+        names = ['winter_total'+name,'spring_total'+name,'summer_total'+name,
+                      'fall_total'+name]
+
+        return winter_tot.addBands([spring_tot,summer_tot,fall_tot]) \
+                         .rename(names)
+
+  # Set up Seasonal dates for precip, seasonal predictors
+    winter_start = ee.Date(startDate)
+    winter_end = ee.Date(startDate).advance(3,'month')
+    spring_start = ee.Date(startDate).advance(3,'month')
+    spring_end = ee.Date(startDate).advance(6,'month')
+    summer_start = ee.Date(startDate).advance(6,'month')
+    summer_end = ee.Date(startDate).advance(9,'month')
+    fall_start = ee.Date(startDate).advance(9,'month')
+    fall_end = ee.Date(endDate)
+
+  # Aggregate seasonal info for each variable of interest (potEvap neglected purposefully)
+    seasonal_precip = add_seasonal_info(NLDAS_precip,"Precip","total_precipitation")
+    seasonal_temp = add_seasonal_info(NLDAS_temp,"Temp","temperature")
+    seasonal_humid = add_seasonal_info(NLDAS_humid,"Humidity","specific_humidity")
+
+    waterYear_start = ee.Date(startDate).advance(10,'month')
+    waterYear_end = waterYear_start.advance(1,'year')
+
+  #========================================================
+  # Aggregate Other Covariates
+  #========================================================
+
+  # Vegetative Continuous Fields
+    meanVCF = VCF.filterDate(startDate, endDate)\
+                 .mean()
+    
+#     VCF_qc.filterDate(startDate, endDate) \
+#                       .mean()
+
+  # Filter Precip by water year to get total precip annually
+
+    waterYearTot = NLDAS_precip.filterDate(waterYear_start,waterYear_end) \
+                                 .sum()
+
+  # Find mean EVI per year:
+    maxEVI = EVI.filterDate(startDate,endDate) \
+                  .mean() \
+                  .rename(['Mean_EVI'])
+
+  #Find mean NDVI per year:
+    maxNDVI = NDVI.filterDate(startDate,endDate) \
+                    .mean() \
+                    .rename(["Mean_NDVI"])
+
+  # Find flashiness per year by taking a Per-pixel Standard Deviation:
+    flashiness_yearly = ee.Image(pekel_monthly_water.filterDate(startDate,endDate) \
+                                                      .reduce(ee.Reducer.sampleStdDev()) \
+                                                      .select(["water_stdDev"])) \
+                                                      .rename("Flashiness")
+
+  # Find max LST per year:
+    maxLST = LST.max().rename(["Max_LST_Annual"])
+    
+  #Find Min LST
+    minLST =LST.min().rename(["Min_LST_Annual"])
+
+  # Find mean GPP per year:
+    maxGPP = GPP_QC.filterDate(startDate,endDate) \
+                      .mean() \
+                      .rename(['Mean_GPP','QC'])
+
+  # All banded images that don't change over time
+    static_input_bands = sw_occurrence.addBands(DEM.select("elevation")) \
+                                          .addBands(srtmChili) \
+                                          .addBands(topoDiv) \
+                                          .addBands(footprint)
+
+  # Construct huge banded image
+    banded_image = static_input_bands \
+                          .addBands(srcImg = maxLST, names = ["Max_LST_Annual"]) \
+                          .addBands(srcImg = minLST, names = ["Min_LST_Annual"]) \
+                          .addBands(srcImg = maxGPP, names = ["Mean_GPP"]) \
+                          .addBands(srcImg =  maxNDVI, names = ["Mean_NDVI"]) \
+                          .addBands(srcImg = maxEVI, names = ["Mean_EVI"]) \
+                          .addBands(meanVCF.select("Percent_Tree_Cover")) \
+                          .addBands(seasonal_precip) \
+                          .addBands(flashiness_yearly) \
+                          .set("system:time_start",startDate)
+
+    return banded_image.unmask()
+
